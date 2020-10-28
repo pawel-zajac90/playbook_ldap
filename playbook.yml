@@ -3,7 +3,13 @@
   gather_facts: True
   vars_files:
     - vars.yml
+    - secrets.yml
   tasks:
+    # - name: show var
+    #   debug:
+    #     msg:
+    #       cn="{{ new_val }}",ou=people,dc=planetexpress,dc=com
+
     - name: Download script
       git:
         repo: "{{ script_url }}"
@@ -12,14 +18,13 @@
     - name: Change workdir permissions.
       file:
         path: "{{ workdir_path }}/"
-        owner: "{{ username }}"
-        group: "{{ username }}"
+        owner: "{{ ansible_user_id }}"
+        group: "{{ ansible_user_id }}"
         mode: '0755'
         recurse: True
 
     - name: Run script to get users and write it to file
-      # script: "'{{ workdir_path}}'/'{{ script_file }}'"
-      script: /home/pawelz/script/app.py
+      script: /home/pawelz/Repos/bv_playbooks/ldap_update/script/app.py
       environment:
         LDAP_HOST: "{{ ldap_host }}"
         LDAP_PORT: "{{ ldap_port }}"
@@ -27,28 +32,30 @@
         LDAP_PASSWORD: "{{ ldap_password }}"
         LDAP_DN: "{{ ldap_dn }}"
         LDAP_SEARCH_FILTER: "{{ ldap_search_filter }}"
+        DATA_PATH: "{{ workdir_path }}/{{ data_file }}"
       args:
         executable:
-          python3
-
+          python3   
+          
     - name: Create users list
       set_fact:
-        users_list="{{ lookup('file', '{{ data_path }}').split('\n') }}"
-      
-    # - name: check
-    #   debug:
-    #     var: 
-    #       home_d
-    # - name: Change values 
-    #   ldap_attr:
-    #     dn: cn={{ item }},ou=people,dc=planetexpress,dc=com
-    #     name: mail
-    #     values: [mail]
-    #     state: exact
-    #     server_uri: ldap://localhost/
-    #     bind_dn: cn=admin,dc=planetexpress,dc=com
-    #     bind_pw: "GoodNewsEveryone"
-    #   loop:
-    #       "{{ users_list }}"
+        users_list: ["{{ lookup('file', '{{ workdir_path }}/{{ data_file }}').split('\n') }}"]
+
+    - name: Remove script directory
+      file:
+        path: "{{ workdir_path }}"
+        state: absent
+
+    - name: Change values 
+      ldap_attr:
+        dn: "{{ ldap_searching_parameter }}={{ item }},{{ ldap_dn }}"
+        name: "{{ value_to_change }}"
+        values: ["{{ new_value }}"]
+        state: exact
+        server_uri: "{{ ldap_uri }}"
+        bind_dn: "{{ ldap_user }}"
+        bind_pw: "{{ldap_password }}"
+      with_items:
+          "{{ users_list }}"
 
     
