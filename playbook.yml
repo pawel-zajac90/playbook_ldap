@@ -5,11 +5,6 @@
     - vars.yml
     - secrets.yml
   tasks:
-    # - name: show var
-    #   debug:
-    #     msg:
-    #       cn="{{ new_val }}",ou=people,dc=planetexpress,dc=com
-
     - name: Download script
       git:
         repo: "{{ script_url }}"
