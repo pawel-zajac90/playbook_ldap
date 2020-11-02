@@ -17,9 +17,6 @@
         group: "{{ ansible_user_id }}"
         mode: '0755'
         recurse: True
-        
-    - name: install ldap package
-      shell: pip3 install ldap3 
       
     - name: Run script to get users and write it to file
       script: /home/pawelz/Repos/bv_playbooks/ldap_update/script/app.py
